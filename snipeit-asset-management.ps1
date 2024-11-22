@@ -3,8 +3,8 @@ $SnipeItApiUrl = "https://your-snipe-it-instance/api/v1"
 $SnipeItApiToken = "your_api_token"
 
 # Static fields for asset creation
-$status_id = 5  # Change this to the appropriate status ID for your assets
-$fieldset_id = 1  # Change this to the appropriate fieldset ID for your models (Custom Fields)
+$status_id = 2  # Change this to the appropriate status ID for your assets
+$fieldset_id = 2  # Change this to the appropriate fieldset ID for your models (Custom Fields)
 
 # Function to load the necessary assembly for System.Web.HttpUtility
 function Load-HttpUtilityAssembly {
@@ -130,7 +130,12 @@ function Get-KernelVersion {
 
 # Function to get the current active IP address
 function Get-ActiveIPAddress {
-    $ipAddress = (Get-WmiObject -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled -eq $true } | Select-Object -ExpandProperty IPAddress)[0]
+    # Get all IP-enabled network adapters and extract the IPv4 address
+    $ipAddress = Get-CimInstance -ClassName Win32_NetworkAdapterConfiguration |
+        Where-Object { $_.IPEnabled -eq $true } |
+        ForEach-Object { $_.IPAddress -match '\d{1,3}(\.\d{1,3}){3}' } |
+        Select-Object -First 1
+    
     return $ipAddress
 }
 
@@ -171,7 +176,7 @@ function Get-CustomFields {
     $storageCapacity = ($storageInfo | ForEach-Object { $_.Capacity }) -join ", "
 
     $dbFields = @{
-        "_snipeit_adresse_mac_1"   = if ($macAddresses) { $macAddresses } else { "" }
+     <#"_snipeit_adresse_mac_1"   = if ($macAddresses) { $macAddresses } else { "" }
         "_snipeit_ram_5"           = if ($ramAmount) { $ramAmount } else { "" }
         "_snipeit_cpu_6"           = if ($cpuInfo) { $cpuInfo } else { "" }
         "_snipeit_utilisateur_11"  = if ($currentUser) { $currentUser } else { "" }
@@ -179,10 +184,10 @@ function Get-CustomFields {
         "_snipeit_version_41"      = if ($windowsVersion) { $windowsVersion } else { "" }
         "_snipeit_build_43"        = if ($buildNumber) { $buildNumber } else { "" }
         "_snipeit_kernel_42"       = if ($kernelVersion) { $kernelVersion } else { "" }
-        "_snipeit_adresse_ipv4_18" = if ($ipAddress) { $ipAddress } else { "" }
         "_snipeit_type_stockage_7" = if ($storageType) { $storageType } else { "" }
         "_snipeit_capacitac_stockage_8" = if ($storageCapacity) { $storageCapacity } else { "" }
-        "_snipeit_vm_28"           = if ($hyperVVMs) { $hyperVVMs } else { "" }
+        "_snipeit_vm_28"           = if ($hyperVVMs) { $hyperVVMs } else { "" }#>
+        "_snipeit_ip_address_2" = if ($ipAddress) { $ipAddress } else { "" }
     }
 
     return $dbFields
