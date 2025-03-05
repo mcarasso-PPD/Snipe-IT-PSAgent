@@ -87,6 +87,12 @@ function Get-CPUInfo {
     $cpuInfo = (Get-WmiObject -Class Win32_Processor | Select-Object -First 1).Name
     return $cpuInfo
 }
+# Function to get the IMEI For MDC
+function Get-CurrentUser {
+    $currentUser = "$env:USERDOMAIN\$env:USERNAME"
+    return $currentUser
+}
+
 
 # Function to get the currently logged-on user
 function Get-CurrentUser {
