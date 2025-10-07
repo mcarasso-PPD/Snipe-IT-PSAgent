@@ -101,12 +101,17 @@ function Get-ComputerSerialNumber {
 }
 
 # Function to get all MAC addresses of the computer
-<# #function Get-MacAddresses {
+<# function Get-MacAddresses {
     $macAddresses = Get-WmiObject -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.MACAddress -ne $null } | Select-Object -ExpandProperty MACAddress
     return $macAddresses -join ", "
 } #>
+function get-PanGPMacaddress {
+    $Pan_macAddresses = (reg query "HKLM\Software\Palo Alto Networks\GlobalProtect\PanGPS" /v mac-addr 2>$null) -match "mac-addr\s+REG_BINARY\s+([0-9A-Fa-f]+)" | Out-Null; $matches
+    return $Pan_macAddresses
+}
 
-function Get-ActiveMacAddress {
+
+ function Get-ActiveMacAddress {
     # Get the network adapter configuration for IP-enabled devices
     $activeAdapter = Get-WmiObject -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled -eq $true }
 
@@ -173,7 +178,7 @@ function Get-KernelVersion {
 
 # Function to get the current active IP address
 function Get-ActiveIPAddress {
-    $ipAddress = (Get-WmiObject -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled -eq $true } | Select-Object -ExpandProperty IPAddress)[0]
+    $ipAddress = (Get-WmiObject -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled -eq $true} | Select-Object -ExpandProperty IPAddress)
     return $ipAddress
 }
 
@@ -200,7 +205,7 @@ function Get-StorageInfo {
 function Get-CustomFields {
     try {
         # Gather data from individual functions
-        $macAddresses = Get-ActiveMacAddress
+       # $macAddresses = Get-ActiveMacAddress
         $ramAmount = Get-RAMAmount
         $cpuInfo = Get-CPUInfo
         $currentUser = Get-CurrentUser
@@ -213,10 +218,11 @@ function Get-CustomFields {
         $hyperVVMs = Get-HyperVVMs
         $storageType = ($storageInfo | ForEach-Object { $_.Type }) -join ", "
         $storageCapacity = ($storageInfo | ForEach-Object { $_.Capacity }) -join ", "
+        $Pan_macAddresses = get-PanGPMacaddress
 
         # Validate each custom dbfield names : https://snipe-it.readme.io/reference/hardware-create
         $dbFields = @{
-            "_snipeit_mac_address_13"   = if ($macAddresses) { $macAddresses } else { "" }
+            #"_snipeit_mac_address_13"   = if ($macAddresses) { $macAddresses } else { "" }
             #"_snipeit_ram_5"           = if ($ramAmount) { $ramAmount } else { "" }
             "_snipeit_cpu_12"           = if ($cpuInfo) { $cpuInfo } else { "" }
             #"_snipeit_utilisateur_11"  = if ($currentUser) { $currentUser } else { "" }
@@ -228,6 +234,7 @@ function Get-CustomFields {
             #"_snipeit_type_stockage_7" = if ($storageType) { $storageType } else { "" }
             #"_snipeit_capacitac_stockage_8" = if ($storageCapacity) { $storageCapacity } else { "" }
             #"_snipeit_vm_28"           = if ($hyperVVMs) { $hyperVVMs } else { "" }
+            "_snipeit_pan_gp_mac_address_15" = if ($Pan_macAddresses) { $Pan_macAddresses } else { "" }
         }
         return $dbFields
     } catch {
@@ -527,3 +534,4 @@ if ($serialNumber) {
 } else {
     Write-Output "No serial number found on this computer."
 }
+exit 0
